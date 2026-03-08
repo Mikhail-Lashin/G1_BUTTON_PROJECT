@@ -42,7 +42,7 @@ G1_CFG = ArticulationCfg(
             joint_names_expr=["(?!right_(shoulder|elbow|wrist)).*"], 
             effort_limit_sim=200.0,
             velocity_limit_sim=100.0,
-            stiffness=400.0, # Очень жестко держим позицию
+            stiffness=400.0,
             damping=40.0,
         ),
     },

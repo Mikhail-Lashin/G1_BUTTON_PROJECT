@@ -27,18 +27,11 @@ def joint_pos_target_l2(env: ManagerBasedRLEnv, target: float, asset_cfg: SceneE
     return torch.sum(torch.square(joint_pos - target), dim=1)
 
 def distance_to_button(env: ManagerBasedRLEnv, button_name: str, ee_name: str) -> torch.Tensor:
-    # 1. Позиция кнопки [num_envs, 3]
-    button_pos, _ = env.scene[button_name].get_world_poses()
+    # Теперь это RigidObject, берем данные из буфера напрямую
+    button_pos = env.scene[button_name].data.root_pos_w
     
-    # 2. Индекс энд-эффектора
-    # ВНИМАНИЕ: [0][0], чтобы получить само число (int), а не список[int]
     ee_idx = env.scene["robot"].find_bodies(ee_name)[0][0]
-    
-    # 3. Позиция линка теперь будет строго [num_envs, 3]
     ee_pos = env.scene["robot"].data.body_state_w[:, ee_idx, :3]
     
-    # 4. Расстояние теперь будет строго [num_envs]
-    dist = torch.linalg.norm(button_pos - ee_pos, dim=-1)
-    
-    # 5. Возвращаем строго [num_envs]
-    return torch.exp(-dist)
+    dist_sq = torch.sum(torch.square(button_pos - ee_pos), dim=-1)
+    return -dist_sq

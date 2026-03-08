@@ -13,7 +13,12 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 from isaaclab.assets import RigidObjectCfg
 
-from g1_button_project.tasks.manager_based.g1_button_project import mdp
+# Системные функции Isaac Lab называем i_mdp (Isaac MDP)
+import isaaclab.envs.mdp as i_mdp
+
+# Ваши функции (расстояние до кнопки) называем p_mdp (Project MDP)
+from . import mdp as p_mdp
+
 from isaaclab.envs.mdp import JointEffortActionCfg
 from g1_button_project.robots.g1_cfg import G1_CFG
 
@@ -25,19 +30,26 @@ class G1ButtonProjectSceneCfg(InteractiveSceneCfg):
 
     ground = AssetBaseCfg(
         prim_path="/World/ground",
-        spawn=sim_utils.GroundPlaneCfg(size=(100.0, 100.0)),
+        spawn=sim_utils.GroundPlaneCfg(size=(1000.0, 1000.0)),
         init_state=AssetBaseCfg.InitialStateCfg(pos=(0.0, 0.0, -0.8)),
     )
 
     robot: ArticulationCfg = G1_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
 
-    button = AssetBaseCfg(
+    button = RigidObjectCfg(
         prim_path="{ENV_REGEX_NS}/Button",
         spawn=sim_utils.SphereCfg(
-            radius=0.01,
+            radius=0.03,
+            # ВАЖНО: Физика прописывается ВНУТРИ SphereCfg
+            rigid_props=sim_utils.RigidBodyPropertiesCfg(
+                disable_gravity=True,   # Отключаем гравитацию
+                kinematic_enabled=True, # Делаем объект кинематическим (зафиксированным)
+            ),
+            mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
+            collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
         ),
-        init_state=AssetBaseCfg.InitialStateCfg(pos=(0.25, -0.25, -0.07)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, -0.25, 0.5)),
     )
 
     dome_light = AssetBaseCfg(
@@ -64,8 +76,13 @@ class ObservationsCfg:
     """Наблюдения."""
     @configclass
     class PolicyCfg(ObsGroup):
-        joint_pos = ObsTerm(func=mdp.joint_pos)
-        joint_vel = ObsTerm(func=mdp.joint_vel)
+        joint_pos = ObsTerm(func=i_mdp.joint_pos)
+        joint_vel = ObsTerm(func=i_mdp.joint_vel)
+
+        button_rel = ObsTerm(
+            func=p_mdp.rel_button_pos,
+            params={"button_name": "button", "ee_name": "right_wrist_yaw_link"}
+        )
 
         def __post_init__(self) -> None:
             self.concatenate_terms = True
@@ -75,15 +92,39 @@ class ObservationsCfg:
 @configclass
 class RewardsCfg:
     reach_button = RewTerm(
-        func=mdp.distance_to_button,
-        weight=10.0,
+        func=p_mdp.distance_to_button,
+        weight=50.0,
         params={"button_name": "button", "ee_name": "right_wrist_yaw_link"},
     )
 
 @configclass
 class TerminationsCfg:
     """Терминация (заполним позже)."""
-    time_out = DoneTerm(func=mdp.time_out, time_out=True)
+    time_out = DoneTerm(func=i_mdp.time_out, time_out=True)
+
+@configclass
+class EventCfg:
+    # 1. ГЛОБАЛЬНЫЙ СБРОС (сбросит и робота, и кнопку к их дефолтным init_state)
+    reset_all = EventTerm(
+        func=i_mdp.reset_scene_to_default,
+        mode="reset",
+        params={}, # Параметры пустые, так как функция сама знает, что делать со всей сценой
+    )
+
+    # 2. РАНДОМИЗАЦИЯ КНОПКИ (сработает СЛЕДУЮЩЕЙ и переместит кнопку из дефолта в случайную точку)
+    reset_button_position = EventTerm(
+        func=i_mdp.reset_root_state_uniform,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("button"),
+            "pose_range": {
+                "x": (-0.15, 0.15),
+                "y": (-0.15, 0.15),
+                "z": (0.0, 0.0),
+            },
+            "velocity_range": {},
+        },
+    )
 
 @configclass
 class G1ButtonProjectEnvCfg(ManagerBasedRLEnvCfg):
@@ -103,20 +144,4 @@ class G1ButtonProjectEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.dt = 1 / 120
         self.sim.render_interval = self.decimation
 
-        events: EventCfg = EventCfg()
-
-@configclass
-class EventCfg:
-    reset_button_position = EventTerm(
-        func=mdp.reset_root_state_uniform, # <--- рандомизация
-        mode="reset",
-        params={
-            "asset_cfg": SceneEntityCfg("button"),
-            "pose_range": {
-                "x": (-0.15, 0.15), 
-                "y": (-0.15, 0.15),
-                "z": (0.0, 0.0),  
-            },
-            "velocity_range": {},
-        },
-    )
+        self.events = EventCfg()
