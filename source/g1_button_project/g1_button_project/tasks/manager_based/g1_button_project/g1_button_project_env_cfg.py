@@ -49,7 +49,7 @@ class G1ButtonProjectSceneCfg(InteractiveSceneCfg):
             collision_props=sim_utils.CollisionPropertiesCfg(),
             visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(1.0, 0.0, 0.0)),
         ),
-        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.25, -0.25, 0.5)),
+        init_state=RigidObjectCfg.InitialStateCfg(pos=(0.275, -0.15, -0.07)),
     )
 
     dome_light = AssetBaseCfg(
@@ -81,7 +81,7 @@ class ObservationsCfg:
 
         button_rel = ObsTerm(
             func=p_mdp.rel_button_pos,
-            params={"button_name": "button", "ee_name": "right_wrist_yaw_link"}
+            params={"button_name": "button", "ee_name": "right_hand_middle_ee"}
         )
 
         def __post_init__(self) -> None:
@@ -94,7 +94,7 @@ class RewardsCfg:
     reach_button = RewTerm(
         func=p_mdp.distance_to_button,
         weight=50.0,
-        params={"button_name": "button", "ee_name": "right_wrist_yaw_link"},
+        params={"button_name": "button", "ee_name": "right_hand_middle_ee"},
     )
 
 @configclass
@@ -118,8 +118,8 @@ class EventCfg:
         params={
             "asset_cfg": SceneEntityCfg("button"),
             "pose_range": {
-                "x": (-0.15, 0.15),
-                "y": (-0.15, 0.15),
+                "x": (-0.125, 0.125),
+                "y": (-0.25, 0.25),
                 "z": (0.0, 0.0),
             },
             "velocity_range": {},

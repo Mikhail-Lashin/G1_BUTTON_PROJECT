@@ -47,7 +47,7 @@ def _pre_physics_step(self, actions: torch.Tensor) -> None:
     
     # 1. Получаем позиции
     button_pos, _ = self.scene["button"].get_world_poses()
-    ee_idx = self.scene["robot"].find_bodies("right_wrist_yaw_link")[0][0]
+    ee_idx = self.scene["robot"].find_bodies("right_hand_middle_ee")[0][0]
     ee_pos = self.scene["robot"].data.body_state_w[:, ee_idx, :3]
     
     # 2. Отрисовываем маркер кнопки (у вас уже есть)
