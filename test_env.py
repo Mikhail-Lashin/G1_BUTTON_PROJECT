@@ -2,7 +2,6 @@ import gymnasium as gym
 from isaaclab.app import AppLauncher
 import torch
 
-# Запуск симулятора
 app_launcher = AppLauncher({"headless": False})
 simulation_app = app_launcher.app
 
@@ -29,5 +28,5 @@ while simulation_app.is_running():
         
         step_counter += 1
         
-        # Если нужно замедлить для просмотра глазами (опционально)
+        # Если нужно замедлить
         # import time; time.sleep(0.01)

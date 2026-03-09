@@ -13,15 +13,11 @@ from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
 from isaaclab.assets import RigidObjectCfg
 
-# Системные функции Isaac Lab называем i_mdp (Isaac MDP)
-import isaaclab.envs.mdp as i_mdp
-
-# Ваши функции (расстояние до кнопки) называем p_mdp (Project MDP)
-from . import mdp as p_mdp
+import isaaclab.envs.mdp as i_mdp       # системные функции Isaac Lab - i_mdp
+from . import mdp as p_mdp              # кастомные функции - p_mdp (Project MDP)
 
 from isaaclab.envs.mdp import JointEffortActionCfg
 from g1_button_project.robots.g1_cfg import G1_CFG
-
 
 
 @configclass
@@ -40,10 +36,9 @@ class G1ButtonProjectSceneCfg(InteractiveSceneCfg):
         prim_path="{ENV_REGEX_NS}/Button",
         spawn=sim_utils.SphereCfg(
             radius=0.03,
-            # ВАЖНО: Физика прописывается ВНУТРИ SphereCfg
             rigid_props=sim_utils.RigidBodyPropertiesCfg(
-                disable_gravity=True,   # Отключаем гравитацию
-                kinematic_enabled=True, # Делаем объект кинематическим (зафиксированным)
+                disable_gravity=True,
+                kinematic_enabled=True, # фиксация
             ),
             mass_props=sim_utils.MassPropertiesCfg(mass=1.0),
             collision_props=sim_utils.CollisionPropertiesCfg(),
@@ -104,21 +99,21 @@ class TerminationsCfg:
 
 @configclass
 class EventCfg:
-    # 1. ГЛОБАЛЬНЫЙ СБРОС (сбросит и робота, и кнопку к их дефолтным init_state)
+    # ГЛОБАЛЬНЫЙ СБРОС (сброс робота и кнопки к дефолтным init_state)
     reset_all = EventTerm(
         func=i_mdp.reset_scene_to_default,
         mode="reset",
-        params={}, # Параметры пустые, так как функция сама знает, что делать со всей сценой
+        params={},
     )
 
-    # 2. РАНДОМИЗАЦИЯ КНОПКИ (сработает СЛЕДУЮЩЕЙ и переместит кнопку из дефолта в случайную точку)
+    # РАНДОМИЗАЦИЯ КНОПКИ
     reset_button_position = EventTerm(
         func=i_mdp.reset_root_state_uniform,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("button"),
             "pose_range": {
-                "x": (-0.125, 0.125),
+                "x": (-0.125, 0.125), # диапазон случайного разброса кнопки относительно init_state
                 "y": (-0.25, 0.25),
                 "z": (0.0, 0.0),
             },

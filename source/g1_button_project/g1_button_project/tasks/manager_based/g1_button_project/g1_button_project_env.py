@@ -35,26 +35,25 @@ class G1ButtonEnv(ManagerBasedRLEnv):
         markers={
             "arrow": sim_utils.UsdFileCfg(
                 usd_path=f"{ISAAC_NUCLEUS_DIR}/Props/UIElements/arrow_x.usd",
-                scale=(0.2, 0.2, 0.2), # Настройте размер под руку робота
-                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0)), # Зеленая стрелка
+                scale=(0.2, 0.2, 0.2),
+                visual_material=sim_utils.PreviewSurfaceCfg(diffuse_color=(0.0, 1.0, 0.0)), # зеленая стрелка
             ),
         },
     )
+
     self.error_marker = VisualizationMarkers(error_marker_cfg)
 
-def _pre_physics_step(self, actions: torch.Tensor) -> None:
-        super()._pre_physics_step(actions)
-    
-    # 1. Получаем позиции
-    button_pos, _ = self.scene["button"].get_world_poses()
-    ee_idx = self.scene["robot"].find_bodies("right_hand_middle_ee")[0][0]
-    ee_pos = self.scene["robot"].data.body_state_w[:, ee_idx, :3]
-    
-    # 2. Отрисовываем маркер кнопки (у вас уже есть)
-    self.button_marker.visualize(button_pos)
-    
-    # 3. Отрисовываем стрелку из руки
-    # Пока просто поместим её в руку, чтобы видеть, что она там. 
-    # (Для разворота стрелки в сторону кнопки требуются кватернионы, 
-    # оставим это на следующий шаг, если стрелка появится).
-    self.error_marker.visualize(ee_pos)
+    def _pre_physics_step(self, actions: torch.Tensor) -> None:
+            super()._pre_physics_step(actions)
+        
+        button_pos, _ = self.scene["button"].get_world_poses()
+        ee_idx = self.scene["robot"].find_bodies("right_hand_middle_ee")[0][0]
+        ee_pos = self.scene["robot"].data.body_state_w[:, ee_idx, :3]
+        
+        self.button_marker.visualize(button_pos)
+        
+        # Отрисовываем стрелку из руки
+        # Пока просто поместим её в руку, чтобы видеть, что она там. 
+        # (Для разворота стрелки в сторону кнопки требуются кватернионы, 
+        # оставим это на следующий шаг, если стрелка появится).
+        self.error_marker.visualize(ee_pos)
